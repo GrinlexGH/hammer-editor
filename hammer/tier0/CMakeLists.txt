@@ -13,6 +13,7 @@ set(SOURCES
     memdbg.cpp
     mem_helpers.h
     mem_helpers.cpp
+    tier0_strtools.cpp
 )
 
 if(WIN32)
