@@ -76,7 +76,7 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR CMAKE_CXX_SIMULATE_ID MATCHES "MSVC")
-    add_compile_definitions(COMPILER_MSVC=1)
+    add_compile_definitions(COMPILER_MSVC=1 MSVC=1)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         add_compile_definitions(COMPILER_MSVC64=1)
     elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
@@ -85,11 +85,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" OR CMAKE_CXX_SIMULATE_ID MATCHES "MSVC")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    add_compile_definitions(COMPILER_GCC=1)
+    add_compile_definitions(COMPILER_GCC=1 GNUC=1)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang")
-    add_compile_definitions(COMPILER_CLANG=1)
+    add_compile_definitions(COMPILER_CLANG=1 GNUC=1)
 endif()
 
 include_directories(public)

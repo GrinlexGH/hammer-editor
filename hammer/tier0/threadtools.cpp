@@ -57,6 +57,7 @@
 #endif
 
 #include <map>
+#include <nowide/convert.hpp>
 
 // Must be last header...
 #include "tier0/memdbgon.h"
@@ -1214,14 +1215,14 @@ void CThreadEvent::UnregisterWaitingThread(sys_semaphore_t *pSemaphore)
 #ifdef _WIN32
 	CThreadEvent::CThreadEvent( const char *name, bool initialState, bool bManualReset )
 	{
-		m_hSyncObject = CreateEvent( NULL, bManualReset, (BOOL) initialState, name );
+		m_hSyncObject = CreateEventW( NULL, bManualReset, (BOOL) initialState, nowide::widen(name).c_str() );
 		AssertMsg1( m_hSyncObject, "Failed to create event (error 0x%x)", GetLastError() );
 	}
 
 
 	NamedEventResult_t CThreadEvent::CheckNamedEvent( const char *name, uint32 dwTimeout )
 	{
-		HANDLE eHandle = OpenEvent( SYNCHRONIZE, FALSE, name );
+		HANDLE eHandle = OpenEventW( SYNCHRONIZE, FALSE, nowide::widen(name).c_str() );
 		
 		if ( eHandle == NULL ) return TT_EventDoesntExist;
 		
@@ -1606,7 +1607,7 @@ bool CThreadSemaphore::Release( int32 releaseCount, int32 *pPreviousCount )
 
 CThreadFullMutex::CThreadFullMutex( bool bEstablishInitialOwnership, const char *pszName )
 {
-   m_hSyncObject = CreateMutex( NULL, bEstablishInitialOwnership, pszName );
+   m_hSyncObject = CreateMutexW( NULL, bEstablishInitialOwnership, nowide::widen(pszName).c_str() );
 
    AssertMsg1( m_hSyncObject, "Failed to create mutex (error 0x%x)", GetLastError() );
 }
