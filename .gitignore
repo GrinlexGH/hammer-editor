@@ -1,0 +1,11 @@
+.cache/
+.PVS-Studio/
+.vscode/
+.vs/
+.idea/
+
+build/
+out/
+third_party/bin/
+
+!.vscode/launch.json

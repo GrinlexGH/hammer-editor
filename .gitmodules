@@ -1,0 +1,4 @@
+[submodule "third_party/src/nowide"]
+	path = third_party/src/nowide
+	url = https://github.com/boostorg/nowide.git
+	branch = standalone
