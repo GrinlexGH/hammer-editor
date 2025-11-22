@@ -9,6 +9,8 @@
 #include "tier0/minidump.h"
 #include "tier0/platform.h"
 
+#include <nowide/convert.hpp>
+
 #if defined( _WIN32 ) && !defined( _X360 )
 
 #if _MSC_VER >= 1300
@@ -37,7 +39,7 @@ typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)
 static int g_nMinidumpsWritten = 0;
 
 // process-wide prefix to use for minidumps
-static tchar g_rgchMinidumpFilenamePrefix[MAX_PATH];
+static char g_rgchMinidumpFilenamePrefix[MAX_PATH];
 
 // Process-wide comment to put into minidumps
 static char g_rgchMinidumpComment[2048];
@@ -56,17 +58,17 @@ bool WriteMiniDumpUsingExceptionInfo(
 	_EXCEPTION_POINTERS * pExceptionInfo, 
 	int minidumpType,
 	const char *pszFilenameSuffix,
-	tchar *ptchMinidumpFileNameBuffer /* = NULL */
+	char *ptchMinidumpFileNameBuffer /* = NULL */
 	)
 {
 	if ( ptchMinidumpFileNameBuffer )
 	{
-		*ptchMinidumpFileNameBuffer = tchar( 0 );
+		*ptchMinidumpFileNameBuffer = char( 0 );
 	}
 
 	// get the function pointer directly so that we don't have to include the .lib, and that
 	// we can easily change it to using our own dll when this code is used on win98/ME/2K machines
-	HMODULE hDbgHelpDll = ::LoadLibrary( "DbgHelp.dll" );
+	HMODULE hDbgHelpDll = ::LoadLibraryW( L"DbgHelp.dll" );
 	if ( !hDbgHelpDll )
 		return false;
 
@@ -83,20 +85,27 @@ bool WriteMiniDumpUsingExceptionInfo(
 		// If they didn't set a dump prefix, then set one for them using the module name
 		if ( g_rgchMinidumpFilenamePrefix[0] == TCHAR(0) )
 		{
-			tchar rgchModuleName[MAX_PATH];
-			#ifdef TCHAR_IS_WCHAR
-				::GetModuleFileNameW( NULL, rgchModuleName, sizeof(rgchModuleName) / sizeof(tchar) );
-			#else
-				::GetModuleFileName( NULL, rgchModuleName, sizeof(rgchModuleName) / sizeof(tchar) );
-			#endif
+			//char rgchModuleName[MAX_PATH];
 
+			std::wstring out(100, L'\0');
+			DWORD size;
+			while (true) {
+				size = GetModuleFileNameW(nullptr, out.data(), static_cast<DWORD>(out.size()));
+				if (size < out.size())
+					break;
+
+				out.resize(out.size() + 100);
+			}
+			out.resize(size);
+			std::string rgchModuleName = nowide::narrow(out);
+			
 			// strip off the rest of the path from the .exe name
-			tchar *pch = _tcsrchr( rgchModuleName, '.' );
+			char *pch = (char*)strchr( rgchModuleName.c_str(), '.' );
 			if ( pch )
 			{
 				*pch = 0;
 			}
-			pch = _tcsrchr( rgchModuleName, '\\' );
+			pch = (char*)strchr( rgchModuleName.c_str(), '\\' );
 			if ( pch )
 			{
 				// move past the last slash
@@ -104,16 +113,16 @@ bool WriteMiniDumpUsingExceptionInfo(
 			}
 			else
 			{
-				pch = _T("unknown");
+				pch = "unknown";
 			}
 			strcpy( g_rgchMinidumpFilenamePrefix, pch );
 		}
 
 		
 		// can't use the normal string functions since we're in tier0
-		tchar rgchFileName[MAX_PATH];
-		_sntprintf( rgchFileName, sizeof(rgchFileName) / sizeof(tchar),
-			_T("%s_%d%02d%02d_%02d%02d%02d_%d%hs%hs.mdmp"),
+		char rgchFileName[MAX_PATH];
+		std::snprintf( rgchFileName, sizeof(rgchFileName),
+			"%s_%d%02d%02d_%02d%02d%02d_%d%hs%hs.mdmp",
 			g_rgchMinidumpFilenamePrefix,
 			pTime->tm_year + 1900,	/* Year less 2000 */
 			pTime->tm_mon + 1,		/* month (0 - 11 : 0 = January) */
@@ -135,17 +144,13 @@ bool WriteMiniDumpUsingExceptionInfo(
 			if ( c == '/' || c == '\\' )
 			{
 				*pSlash = '\0';
-				::CreateDirectory( rgchFileName, NULL );
+				::CreateDirectoryW( nowide::widen(rgchFileName).c_str(), NULL );
 				*pSlash = c;
 			}
 		}
 
 		BOOL bMinidumpResult = FALSE;
-#ifdef TCHAR_IS_WCHAR
-		HANDLE hFile = ::CreateFileW( rgchFileName, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
-#else
-		HANDLE hFile = ::CreateFile( rgchFileName, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
-#endif
+		HANDLE hFile = ::CreateFileW( nowide::widen(rgchFileName).c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 
 		if ( hFile )
 		{
@@ -182,9 +187,9 @@ bool WriteMiniDumpUsingExceptionInfo(
 				if ( ptchMinidumpFileNameBuffer )
 				{
 					// Copy the file name from "pSrc = rgchFileName" into "pTgt = ptchMinidumpFileNameBuffer"
-					tchar *pTgt = ptchMinidumpFileNameBuffer;
-					tchar const *pSrc = rgchFileName;
-					while ( ( *( pTgt ++ ) = *( pSrc ++ ) ) != tchar( 0 ) )
+					char *pTgt = ptchMinidumpFileNameBuffer;
+					char const *pSrc = rgchFileName;
+					while ( ( *( pTgt ++ ) = *( pSrc ++ ) ) != char( 0 ) )
 						continue;
 				}
 			}
@@ -195,8 +200,8 @@ bool WriteMiniDumpUsingExceptionInfo(
 		// mark any failed minidump writes by renaming them
 		if ( !bMinidumpResult )
 		{
-			tchar rgchFailedFileName[_MAX_PATH];
-			_sntprintf( rgchFailedFileName, sizeof(rgchFailedFileName) / sizeof(tchar), "(failed)%s", rgchFileName );
+			char rgchFailedFileName[_MAX_PATH];
+			std::snprintf( rgchFailedFileName, sizeof(rgchFailedFileName), "(failed)%s", rgchFileName );
 			// Ensure null-termination.
 			rgchFailedFileName[ Q_ARRAYSIZE(rgchFailedFileName) - 1 ] = 0;
 			rename( rgchFileName, rgchFailedFileName );
@@ -325,7 +330,7 @@ DBG_OVERLOAD bool g_bInException = false;
 // Input:	pfn -			Function to call within protective exception block
 //			pv -			Void pointer to pass that function
 //-----------------------------------------------------------------------------
-void CatchAndWriteMiniDump( FnWMain pfn, int argc, tchar *argv[] )
+void CatchAndWriteMiniDump( FnWMain pfn, int argc, char *argv[] )
 {
 	CatchAndWriteMiniDumpEx( pfn, argc, argv, k_ECatchAndWriteMiniDumpAbort );
 }
@@ -344,11 +349,11 @@ struct CatchAndWriteContext_t
 	ECatchAndWriteFunctionType  m_eType;
 	void						*m_pfn;
 	int							*m_pargc;
-	tchar						***m_pargv;
+	char						***m_pargv;
 	void						**m_ppv;
 	ECatchAndWriteMinidumpAction m_eAction;
 
-	void						Set( ECatchAndWriteFunctionType eType, ECatchAndWriteMinidumpAction eAction, void *pfn, int *pargc, tchar **pargv[], void **ppv )
+	void						Set( ECatchAndWriteFunctionType eType, ECatchAndWriteMinidumpAction eAction, void *pfn, int *pargc, char **pargv[], void **ppv )
 	{
 		m_eType = eType;
 		m_eAction = eAction;
@@ -477,7 +482,7 @@ int CatchAndWriteMiniDump_Impl( CatchAndWriteContext_t &ctx )
 //			pv -			Void pointer to pass that function
 //			eAction -		Specifies what to do if it catches an exception
 //-----------------------------------------------------------------------------
-void CatchAndWriteMiniDumpEx( FnWMain pfn, int argc, tchar *argv[], ECatchAndWriteMinidumpAction eAction )
+void CatchAndWriteMiniDumpEx( FnWMain pfn, int argc, char *argv[], ECatchAndWriteMinidumpAction eAction )
 {
 	CatchAndWriteContext_t ctx;
 	ctx.Set( k_eSCatchAndWriteFunctionTypeWMain, eAction, (void *)pfn, &argc, &argv, NULL );
@@ -490,7 +495,7 @@ void CatchAndWriteMiniDumpEx( FnWMain pfn, int argc, tchar *argv[], ECatchAndWri
 //			pv -			Void pointer to pass that function
 //			eAction -		Specifies what to do if it catches an exception
 //-----------------------------------------------------------------------------
-int CatchAndWriteMiniDumpExReturnsInt( FnWMainIntRet pfn, int argc, tchar *argv[], ECatchAndWriteMinidumpAction eAction )
+int CatchAndWriteMiniDumpExReturnsInt( FnWMainIntRet pfn, int argc, char *argv[], ECatchAndWriteMinidumpAction eAction )
 {
 	CatchAndWriteContext_t ctx;
 	ctx.Set( k_eSCatchAndWriteFunctionTypeWMainIntReg, eAction, (void *)pfn, &argc, &argv, NULL );

@@ -16,6 +16,7 @@ set(SOURCES
     tier0_strtools.cpp
     cpu.cpp
     minidump.cpp
+    vcrmode.cpp
 )
 
 if(WIN32)
