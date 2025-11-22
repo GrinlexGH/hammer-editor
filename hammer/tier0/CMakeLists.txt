@@ -7,6 +7,7 @@ set(SOURCES
     dbg.cpp
     pch_tier0.h
     fasttimer.cpp
+    threadtools.cpp
 )
 
 if(WIN32)

@@ -837,21 +837,21 @@ public:
 	bool operator==( T *rhs ) const	{ return ( m_value == rhs ); }
 	bool operator!=( T *rhs ) const	{ return ( m_value != rhs ); }
 
-	T *operator++()					{ return ((T *)_InterlockedExchangeAdd64( (volatile __int64 *)&m_value, sizeof(T) )) + 1; }
-	T *operator++(int)				{ return (T *)_InterlockedExchangeAdd64( (volatile __int64 *)&m_value, sizeof(T) ); }
+	T *operator++()					{ return ((T *)_InterlockedExchangeAdd64( (volatile std::int64_t *)&m_value, sizeof(T) )) + 1; }
+	T *operator++(int)				{ return (T *)_InterlockedExchangeAdd64( (volatile std::int64_t *)&m_value, sizeof(T) ); }
 
-	T *operator--()					{ return ((T *)_InterlockedExchangeAdd64( (volatile __int64 *)&m_value, -sizeof(T) )) - 1; }
-	T *operator--(int)				{ return (T *)_InterlockedExchangeAdd64( (volatile __int64 *)&m_value, -sizeof(T) ); }
+	T *operator--()					{ return ((T *)_InterlockedExchangeAdd64( (volatile std::int64_t *)&m_value, -sizeof(T) )) - 1; }
+	T *operator--(int)				{ return (T *)_InterlockedExchangeAdd64( (volatile std::int64_t *)&m_value, -sizeof(T) ); }
 
 	bool AssignIf( T *conditionValue, T *newValue )	{ return _InterlockedCompareExchangePointer( (void * volatile *)&m_value, newValue, conditionValue ) == conditionValue; }
 
 	T *operator=( T *newValue )		{ _InterlockedExchangePointer( (void * volatile *) &m_value, newValue ); return newValue; }
 
-	void operator+=( int add )		{ _InterlockedExchangeAdd64( (volatile __int64 *)&m_value, add * sizeof(T) ); }
+	void operator+=( int add )		{ _InterlockedExchangeAdd64( (volatile std::int64_t *)&m_value, add * sizeof(T) ); }
 	void operator-=( int subtract )	{ operator+=( -subtract ); }
 
 	// Atomic add is like += except it returns the previous value as its return value
-	T *AtomicAdd( int add ) { return ( T * )_InterlockedExchangeAdd64( (volatile __int64 *)&m_value, add * sizeof(T) ); }
+	T *AtomicAdd( int add ) { return ( T * )_InterlockedExchangeAdd64( (volatile std::int64_t *)&m_value, add * sizeof(T) ); }
 
 	T *operator+( int rhs ) const		{ return m_value + rhs; }
 	T *operator-( int rhs ) const		{ return m_value - rhs; }
@@ -1023,7 +1023,7 @@ private:
 			return false;
 
 		ThreadMemoryBarrier();
-		++m_depth;
+		m_depth = m_depth + 1;
 		return true;
 	}
 
@@ -1060,7 +1060,7 @@ public:
 			Lock( threadId, nSpinSleepTime );
 		}
 #ifdef _DEBUG
-		if ( m_ownerID != (int32)ThreadGetCurrentId() )
+		if ( m_ownerID != (uint32)ThreadGetCurrentId() )
 			DebuggerBreak();
 
 		if ( m_depth == INT_MAX )
@@ -1077,14 +1077,14 @@ public:
 	void Unlock() volatile
 	{
 #ifdef _DEBUG
-		if ( m_ownerID != (int32)ThreadGetCurrentId() )
+		if ( m_ownerID != (uint32)ThreadGetCurrentId() )
 			DebuggerBreak();
 
 		if ( m_depth <= 0 )
 			DebuggerBreak();
 #endif
 
-		--m_depth;
+		m_depth = m_depth - 1;
 		if ( !m_depth )
 		{
 			ThreadMemoryBarrier();
@@ -1116,7 +1116,7 @@ public:
 	}
 
 private:
-	uint8 pad[128-sizeof(CThreadFastMutex)];
+	[[maybe_unused]] uint8 pad[128-sizeof(CThreadFastMutex)];
 };
 
 #else
@@ -1344,7 +1344,7 @@ public:
 	//-----------------------------------------------------
 #ifdef _WIN32
 	operator HANDLE() { return GetHandle(); }
-	const HANDLE GetHandle() const { return m_hSyncObject; }
+	HANDLE GetHandle() const { return m_hSyncObject; }
 #endif
 	//-----------------------------------------------------
 	// Wait for a signal from the object
