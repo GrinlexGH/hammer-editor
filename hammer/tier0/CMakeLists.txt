@@ -14,6 +14,7 @@ set(SOURCES
     mem_helpers.h
     mem_helpers.cpp
     tier0_strtools.cpp
+    cpu.cpp
 )
 
 if(WIN32)
