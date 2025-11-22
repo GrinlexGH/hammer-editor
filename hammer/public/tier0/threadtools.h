@@ -1725,7 +1725,7 @@ private:
 			uint16 m_fWriting;
 			uint16 m_nReaders;
 #endif
-		};
+		} m_parts;
 		uint32 m_i32;
 	};
 
@@ -1897,10 +1897,10 @@ protected:
 
 	// Allow for custom start waiting
 	virtual bool WaitForCreateComplete( CThreadEvent *pEvent );
-	const ThreadId_t GetThreadID() const { return (ThreadId_t)m_threadId; }
+	ThreadId_t GetThreadID() const { return (ThreadId_t)m_threadId; }
 
 #ifdef PLATFORM_WINDOWS
-	const ThreadHandle_t GetThreadHandle() const { return (ThreadHandle_t)m_hThread; }
+	ThreadHandle_t GetThreadHandle() const { return (ThreadHandle_t)m_hThread; }
 
 	static unsigned long __stdcall ThreadProc( void * pv );
 	typedef unsigned long (__stdcall *ThreadProc_t)( void * );
@@ -2404,12 +2404,12 @@ inline void CThreadRWLock::UnlockRead()
 
 inline bool CThreadSpinRWLock::IsLockedForWrite()
 {
-	return ( m_lockInfo.m_fWriting == 1 );
+	return ( m_lockInfo.m_parts.m_fWriting == 1 );
 }
 
 inline bool CThreadSpinRWLock::IsLockedForRead()
 {
-	return ( m_lockInfo.m_nReaders > 0 );
+	return ( m_lockInfo.m_parts.m_nReaders > 0 );
 }
 
 FORCEINLINE bool CThreadSpinRWLock::TryLockForWrite()

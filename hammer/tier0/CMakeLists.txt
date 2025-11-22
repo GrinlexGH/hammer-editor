@@ -8,6 +8,8 @@ set(SOURCES
     pch_tier0.h
     fasttimer.cpp
     threadtools.cpp
+    commandline.cpp
+    platform.cpp
 )
 
 if(WIN32)
@@ -16,10 +18,14 @@ endif()
 
 add_library(${CURRENT_TARGET_NAME} SHARED ${SOURCES})
 
+set_target_properties(${CURRENT_TARGET_NAME}
+    PROPERTIES
+    DEFINE_SYMBOL "TIER0_DLL_EXPORT=1"
+)
+
 target_compile_definitions(
     ${CURRENT_TARGET_NAME}
     PRIVATE
-    TIER0_DLL_EXPORT=1
     WAF_CFLAGS="dummy"
     WAF_LDFLAGS="dummy"
 )

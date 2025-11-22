@@ -568,6 +568,8 @@ typedef void * HINSTANCE;
 	#define mallocsize( _p )	( malloc_usable_size( _p ) )
 #elif defined(OSX)
 	#define mallocsize( _p )	( malloc_size( _p ) )
+#elif defined( _WIN32 )
+	#define mallocsize( _p )		( _msize( _p ) )
 #else
 #error
 #endif
