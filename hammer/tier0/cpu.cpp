@@ -18,7 +18,7 @@
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
-const tchar* GetProcessorVendorId();
+const char* GetProcessorVendorId();
 
 static bool cpuid(uint32 function, uint32& out_eax, uint32& out_ebx, uint32& out_ecx, uint32& out_edx)
 {
@@ -128,7 +128,7 @@ static bool IsWin98OrOlder()
 		osvi.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
 		if ( !GetVersionEx ( (OSVERSIONINFO *) &osvi) )
 		{
-			Error( _T("IsWin98OrOlder:  Unable to get OS version information") );
+			Error( "IsWin98OrOlder:  Unable to get OS version information" );
 		}
 	}
 
@@ -331,7 +331,7 @@ static bool CheckRDTSCTechnology(void)
 }
 
 // Return the Processor's vendor identification string, or "Generic_x86" if it doesn't exist on this CPU
-const tchar* GetProcessorVendorId()
+const char* GetProcessorVendorId()
 {
 #if defined( _X360 ) || defined( _PS3 )
 	return "PPC";
@@ -340,18 +340,18 @@ const tchar* GetProcessorVendorId()
 #else
 	uint32 unused, VendorIDRegisters[3];
 
-	static tchar VendorID[13];
+	static char VendorID[13];
 
 	memset( VendorID, 0, sizeof(VendorID) );
 	if ( !cpuid(0,unused, VendorIDRegisters[0], VendorIDRegisters[2], VendorIDRegisters[1] ) )
 	{
 		if ( IsPC() )
 		{
-			_tcscpy( VendorID, _T( "Generic_x86" ) ); 
+			std::strcpy( VendorID, "Generic_x86" ); 
 		}
 		else if ( IsX360() )
 		{
-			_tcscpy( VendorID, _T( "PowerPC" ) ); 
+			std::strcpy( VendorID, "PowerPC" ); 
 		}
 	}
 	else
@@ -366,7 +366,7 @@ const tchar* GetProcessorVendorId()
 }
 
 // Return the build's architecture
-const tchar* GetProcessorArchName()
+const char* GetProcessorArchName()
 {
 #if defined( __x86_64__) || defined(_M_X64)
 	return "amd64";
@@ -608,7 +608,7 @@ const CPUInformation* GetCPUInformation()
 	pi.m_bSSE41        = CheckSSE41Technology();
 	pi.m_bSSE42        = CheckSSE42Technology();
 	pi.m_b3DNow        = Check3DNowTechnology();
-	pi.m_szProcessorID = (tchar*)GetProcessorVendorId();
+	pi.m_szProcessorID = (char*)GetProcessorVendorId();
 	pi.m_bHT		   = HTSupported();
 
 	uint32 eax, ebx, edx, ecx;

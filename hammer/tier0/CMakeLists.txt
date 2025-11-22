@@ -15,6 +15,7 @@ set(SOURCES
     mem_helpers.cpp
     tier0_strtools.cpp
     cpu.cpp
+    minidump.cpp
 )
 
 if(WIN32)
