@@ -7,6 +7,7 @@
 
 #include "pch_tier0.h"
 #include <time.h>
+#include <nowide/convert.hpp>
 
 #if defined(_WIN32) && !defined(_X360)
 #include <errno.h>
@@ -150,9 +151,12 @@ void Plat_GetModuleFilename( char *pOut, int nMaxBytes )
 {
 #ifdef PLATFORM_WINDOWS_PC
 	SetLastError( ERROR_SUCCESS ); // clear the error code
-	GetModuleFileName( NULL, pOut, nMaxBytes );
+	std::wstring out;
+	out.reserve(nMaxBytes);
+	GetModuleFileNameW( NULL, out.data(), nMaxBytes );
 	if ( GetLastError() != ERROR_SUCCESS )
 		Error( "Plat_GetModuleFilename: The buffer given is too small (%d bytes).", nMaxBytes );
+	std::strncpy(pOut, nowide::narrow(out).data(), nMaxBytes);
 #elif PLATFORM_X360
 	pOut[0] = 0x00;		// return null string on Xbox 360
 #else
@@ -247,7 +251,7 @@ bool vtune( bool resume )
 	{
 		bInitialized = true;
 
-		HINSTANCE pVTuneDLL = LoadLibrary( "vtuneapi.dll" );
+		HINSTANCE pVTuneDLL = LoadLibraryW( L"vtuneapi.dll" );
 
 		if( pVTuneDLL )
 		{
@@ -295,13 +299,10 @@ void Plat_DebugString( const char * psz )
 }
 
 
-const tchar *Plat_GetCommandLine()
+const char *Plat_GetCommandLine()
 {
-#ifdef TCHAR_IS_WCHAR
-	return GetCommandLineW();
-#else
-	return GetCommandLine();
-#endif
+	static std::string cmd = nowide::narrow(GetCommandLineW());
+	return cmd.c_str();
 }
 
 bool GetMemoryInformation( MemoryInformation *pOutMemoryInfo )
@@ -361,7 +362,7 @@ void Plat_SetWatchdogHandlerFunction( Plat_WatchDogHandlerFunction_t function )
 bool Is64BitOS()
 {
 	typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
-	static LPFN_ISWOW64PROCESS pfnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress( GetModuleHandle("kernel32"), "IsWow64Process" );
+	static LPFN_ISWOW64PROCESS pfnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress( GetModuleHandleW(L"kernel32"), "IsWow64Process" );
 
 	static BOOL bIs64bit = FALSE;
 	static bool bInitialized = false;
