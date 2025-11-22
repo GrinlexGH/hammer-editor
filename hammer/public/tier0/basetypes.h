@@ -9,7 +9,6 @@
 #define BASETYPES_H
 
 #include "commonmacros.h"
-#include "wchartypes.h"
 
 #include "tier0/valve_off.h"
 #include <string.h>

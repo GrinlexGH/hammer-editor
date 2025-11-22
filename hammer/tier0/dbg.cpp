@@ -50,7 +50,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern const tchar* GetProcessorArchName();
+extern const char* GetProcessorArchName();
 
 #define MAX_MSGS 4196
 
@@ -122,7 +122,7 @@ void CDbgLogger::Init(const char *logfile)
 		fprintf(file, "Compiler LDFLAGS: %s\n", WAF_LDFLAGS);
 		fflush(file);
 
-		for( int i = 0; i < iMsg; i++ )
+		for( int i = 0; static_cast<size_t>(i) < iMsg; i++ )
 		{
 			Write(pMsgs[i]);
 			delete[] pMsgs[i];
@@ -190,24 +190,24 @@ enum
 
 struct SpewGroup_t
 {
-	tchar	m_GroupName[MAX_GROUP_NAME_LENGTH];
+	char	m_GroupName[MAX_GROUP_NAME_LENGTH];
 	int		m_Level;
 };
 
 // Skip forward past the directory
-static const char *SkipToFname( const tchar* pFile )
+static const char *SkipToFname( const char* pFile )
 {
 	if ( pFile == NULL )
 		return "unknown";
-	const tchar* pSlash = _tcsrchr( pFile, '\\' );
-	const tchar* pSlash2 = _tcsrchr( pFile, '/' );
+	const char* pSlash = std::strrchr( pFile, '\\' );
+	const char* pSlash2 = std::strrchr( pFile, '/' );
 	if (pSlash < pSlash2) pSlash = pSlash2;
 	return pSlash ? pSlash + 1: pFile;
 }
 
 
 //-----------------------------------------------------------------------------
-DBG_INTERFACE SpewRetval_t DefaultSpewFunc( SpewType_t type, const tchar *pMsg )
+DBG_INTERFACE SpewRetval_t DefaultSpewFunc( SpewType_t type, const char *pMsg )
 {
 #ifdef _X360
 	if ( XBX_IsConsoleConnected() )
@@ -218,7 +218,7 @@ DBG_INTERFACE SpewRetval_t DefaultSpewFunc( SpewType_t type, const tchar *pMsg )
 	else
 #endif
 	{
-		_tprintf( _T("%s"), pMsg );
+		std::printf( "%s", pMsg );
 #ifdef _WIN32
 		Plat_DebugString( pMsg );
 #endif
@@ -245,7 +245,7 @@ DBG_INTERFACE SpewRetval_t DefaultSpewFunc( SpewType_t type, const tchar *pMsg )
 }
 
 //-----------------------------------------------------------------------------
-DBG_INTERFACE SpewRetval_t DefaultSpewFuncAbortOnAsserts( SpewType_t type, const tchar *pMsg )
+DBG_INTERFACE SpewRetval_t DefaultSpewFuncAbortOnAsserts( SpewType_t type, const char *pMsg )
 {
 	SpewRetval_t r = DefaultSpewFunc( type, pMsg );
 	if ( type == SPEW_ASSERT )
@@ -261,7 +261,7 @@ static SpewOutputFunc_t   s_SpewOutputFunc = DefaultSpewFunc;
 
 static AssertFailedNotifyFunc_t	s_AssertFailedNotifyFunc = NULL;
 
-static const tchar*	s_pFileName;
+static const char*	s_pFileName;
 static int			s_Line;
 static SpewType_t	s_SpewType;
 
@@ -278,7 +278,7 @@ static Color		s_DefaultOutputColor( 0, 0, 0, 255 );
 struct SpewInfo_t
 {
 	const Color*	m_pSpewOutputColor;
-	const tchar*	m_pSpewOutputGroup;
+	const char*		m_pSpewOutputGroup;
 	int				m_nSpewOutputLevel;
 };
 
@@ -286,9 +286,9 @@ CTHREADLOCALPTR(SpewInfo_t) g_pSpewInfo;
 
 
 // Standard groups
-static const tchar* s_pDeveloper = _T("developer");
-static const tchar* s_pConsole = _T("console");
-static const tchar* s_pNetwork = _T("network");
+static const char* s_pDeveloper = "developer";
+static const char* s_pConsole = "console";
+static const char* s_pNetwork = "network";
 
 enum StandardSpewGroup_t
 {
@@ -318,9 +318,9 @@ SpewOutputFunc_t GetSpewOutputFunc( void )
 	return DefaultSpewFunc;
 }
 
-void _ExitOnFatalAssert( const tchar* pFile, int line )
+void _ExitOnFatalAssert( const char* pFile, int line )
 {
-	_SpewMessage( _T("Fatal assert failed: %s, line %d.  Application exiting.\n"), pFile, line );
+	_SpewMessage( "Fatal assert failed: %s, line %d.  Application exiting.\n", pFile, line );
 
 	// only write out minidumps if we're not in the debugger
 	if ( !Plat_IsInDebugSession() )
@@ -330,7 +330,7 @@ void _ExitOnFatalAssert( const tchar* pFile, int line )
 		WriteMiniDump( rgchSuffix );
 	}
 
-	DevMsg( 1, _T("_ExitOnFatalAssert\n") );
+	DevMsg( 1, "_ExitOnFatalAssert\n" );
 	exit( EXIT_FAILURE );
 }
 
@@ -356,7 +356,7 @@ DBG_INTERFACE void _AssertValidReadWritePtr( void* ptr, int count/* = 1*/ )
 }
 
 #undef AssertValidStringPtr
-DBG_INTERFACE void AssertValidStringPtr( const tchar* ptr, int maxchar/* = 0xFFFFFF */ )
+DBG_INTERFACE void AssertValidStringPtr( const char* ptr, int maxchar/* = 0xFFFFFF */ )
 {
 	Assert( ptr );
 }
@@ -364,7 +364,7 @@ DBG_INTERFACE void AssertValidStringPtr( const tchar* ptr, int maxchar/* = 0xFFF
 //-----------------------------------------------------------------------------
 // Should be called only inside a SpewOutputFunc_t, returns groupname, level, color
 //-----------------------------------------------------------------------------
-const tchar* GetSpewOutputGroup( void )
+const char* GetSpewOutputGroup( void )
 {
 	SpewInfo_t *pSpewInfo = g_pSpewInfo;
 	assert( pSpewInfo );
@@ -395,7 +395,7 @@ const Color* GetSpewOutputColor( void )
 //-----------------------------------------------------------------------------
 // Spew functions
 //-----------------------------------------------------------------------------
-DBG_INTERFACE void  _SpewInfo( SpewType_t type, const tchar* pFile, int line )
+DBG_INTERFACE void _SpewInfo( SpewType_t type, const char* pFile, int line )
 {
 	// Only grab the file name. Ignore the path.
 	s_pFileName = SkipToFname( pFile );
@@ -404,42 +404,43 @@ DBG_INTERFACE void  _SpewInfo( SpewType_t type, const tchar* pFile, int line )
 }
 
 
-static SpewRetval_t _SpewMessage( SpewType_t spewType, const char *pGroupName, int nLevel, const Color *pColor, const tchar* pMsgFormat, va_list args )
+static SpewRetval_t _SpewMessage( SpewType_t spewType, const char *pGroupName, int nLevel, const Color *pColor, const char* pMsgFormat, va_list args )
 {
-	tchar pTempBuffer[8192];
+	char pTempBuffer[8192];
 
-	assert( _tcslen( pMsgFormat ) < sizeof( pTempBuffer) ); // check that we won't artifically truncate the string
+	assert( std::strlen( pMsgFormat ) < sizeof( pTempBuffer) ); // check that we won't artifically truncate the string
 
 	/* Printf the file and line for warning + assert only... */
 	int len = 0;
 	if ( spewType == SPEW_ASSERT )
 	{
-		len = _sntprintf( pTempBuffer, sizeof( pTempBuffer ) - 1, _T("%s (%d) : "), s_pFileName, s_Line );
+		len = std::snprintf( pTempBuffer, sizeof( pTempBuffer ), "%s (%d) : ", s_pFileName, s_Line );
 	}
 
-	if ( len == -1 )
+	if ( len < 0 )
 		return SPEW_ABORT;
 
 	/* Create the message.... */
-	int val= _vsntprintf( &pTempBuffer[len], sizeof( pTempBuffer ) - len - 1, pMsgFormat, args );
-	if ( val == -1 )
+	int val = std::vsnprintf( &pTempBuffer[len], sizeof( pTempBuffer ) - len, pMsgFormat, args );
+
+	if ( val < 0 )
 		return SPEW_ABORT;
 
 	len += val;
-	assert( len * sizeof(*pMsgFormat) < sizeof(pTempBuffer) ); /* use normal assert here; to avoid recursion. */
+	assert( len < static_cast<int>(sizeof(pTempBuffer)) ); /* use normal assert here; to avoid recursion. */
 
 	// Add \n for warning and assert
 	if ( spewType == SPEW_ASSERT )
 	{
-		len += _stprintf( &pTempBuffer[len], _T("\n") ); 
+		len += std::sprintf( &pTempBuffer[len], "\n" );
 	}
 
-	assert( len < sizeof(pTempBuffer)/sizeof(pTempBuffer[0]) - 1 ); /* use normal assert here; to avoid recursion. */
+	assert( len < static_cast<int>(sizeof(pTempBuffer)) ); /* use normal assert here; to avoid recursion. */
 	assert( s_SpewOutputFunc );
 
 	/* direct it to the appropriate target(s) */
 	SpewRetval_t ret;
-	assert( (void*)g_pSpewInfo == (void*)NULL );
+	assert( (void*)g_pSpewInfo == nullptr );
 	SpewInfo_t spewInfo =
 	{
 		pColor,
@@ -460,18 +461,19 @@ static SpewRetval_t _SpewMessage( SpewType_t spewType, const char *pGroupName, i
 	{
 // Asserts put the break into the macro so it occurs in the right place
 	case SPEW_DEBUGGER:
+	{
 		if ( spewType != SPEW_ASSERT )
 		{
 			DebuggerBreak();
 		}
-		break;
-		
+	} break;
 	case SPEW_ABORT:
 	{
 //		MessageBox(NULL,"Error in _SpewMessage","Error",MB_OK);
 //		ConMsg( _T("Exiting on SPEW_ABORT\n") );
 		exit(1);
-	}
+	} break;
+	default: break;
 	}
 
 	return ret;
@@ -479,7 +481,7 @@ static SpewRetval_t _SpewMessage( SpewType_t spewType, const char *pGroupName, i
 
 #include "tier0/valve_off.h"
 
-FORCEINLINE SpewRetval_t _SpewMessage( SpewType_t spewType, const tchar* pMsgFormat, va_list args )
+FORCEINLINE SpewRetval_t _SpewMessage( SpewType_t spewType, const char* pMsgFormat, va_list args )
 {
 	return _SpewMessage( spewType, "", 0, &s_DefaultOutputColor, pMsgFormat, args );
 }
@@ -490,7 +492,7 @@ FORCEINLINE SpewRetval_t _SpewMessage( SpewType_t spewType, const tchar* pMsgFor
 // index of the found group, or the index of the group right before where the
 // group should be inserted into the list to maintain sorted order.
 //-----------------------------------------------------------------------------
-bool FindSpewGroup( const tchar* pGroupName, int* pInd )
+bool FindSpewGroup( const char* pGroupName, int* pInd )
 {
 	int s = 0;
 	if (s_GroupCount)
@@ -499,7 +501,7 @@ bool FindSpewGroup( const tchar* pGroupName, int* pInd )
 		while ( s <= e )
 		{
 			int m = (s+e) >> 1;
-			int cmp = _tcsicmp( pGroupName, s_pSpewGroups[m].m_GroupName );
+			int cmp = stricmp( pGroupName, s_pSpewGroups[m].m_GroupName );
 			if ( !cmp )
 			{
 				*pInd = m;
@@ -531,7 +533,7 @@ bool HushAsserts()
 //-----------------------------------------------------------------------------
 // Tests to see if a particular spew is active
 //-----------------------------------------------------------------------------
-bool IsSpewActive( const tchar* pGroupName, int level )
+bool IsSpewActive( const char* pGroupName, int level )
 {
 	// If we don't find the spew group, use the default level.
 	int ind;
@@ -549,7 +551,7 @@ inline bool IsSpewActive( StandardSpewGroup_t group, int level )
 	return s_DefaultLevel >= level;
 }
 
-SpewRetval_t  _SpewMessage( const tchar* pMsgFormat, ... )
+SpewRetval_t _SpewMessage( const char* pMsgFormat, ... )
 {
 	va_list args;
 	va_start( args, pMsgFormat );
@@ -558,7 +560,7 @@ SpewRetval_t  _SpewMessage( const tchar* pMsgFormat, ... )
 	return ret;
 }
 
-SpewRetval_t _DSpewMessage( const tchar *pGroupName, int level, const tchar* pMsgFormat, ... )
+SpewRetval_t _DSpewMessage( const char *pGroupName, int level, const char* pMsgFormat, ... )
 {
 	if( !IsSpewActive( pGroupName, level ) )
 		return SPEW_CONTINUE;
@@ -570,7 +572,7 @@ SpewRetval_t _DSpewMessage( const tchar *pGroupName, int level, const tchar* pMs
 	return ret;
 }
 
-DBG_INTERFACE SpewRetval_t ColorSpewMessage( SpewType_t type, const Color *pColor, const tchar* pMsgFormat, ... )
+DBG_INTERFACE SpewRetval_t ColorSpewMessage( SpewType_t type, const Color *pColor, const char* pMsgFormat, ... )
 {
 	va_list args;
 	va_start( args, pMsgFormat );
@@ -579,7 +581,7 @@ DBG_INTERFACE SpewRetval_t ColorSpewMessage( SpewType_t type, const Color *pColo
 	return ret;
 }
 
-void Msg( const tchar* pMsgFormat, ... )
+void Msg( const char* pMsgFormat, ... )
 {
 	va_list args;
 	va_start( args, pMsgFormat );
@@ -587,7 +589,7 @@ void Msg( const tchar* pMsgFormat, ... )
 	va_end(args);
 }
 
-void DMsg( const tchar *pGroupName, int level, const tchar *pMsgFormat, ... )
+void DMsg( const char *pGroupName, int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( pGroupName, level ) )
 		return;
@@ -598,13 +600,13 @@ void DMsg( const tchar *pGroupName, int level, const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void MsgV( PRINTF_FORMAT_STRING const tchar *pMsg, va_list arglist )
+void MsgV( PRINTF_FORMAT_STRING const char *pMsg, va_list arglist )
 {
 	_SpewMessage( SPEW_MESSAGE, pMsg, arglist );
 }
 
 
-void Warning( const tchar *pMsgFormat, ... )
+void Warning( const char *pMsgFormat, ... )
 {
 	va_list args;
 	va_start( args, pMsgFormat );
@@ -612,7 +614,7 @@ void Warning( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void DWarning( const tchar *pGroupName, int level, const tchar *pMsgFormat, ... )
+void DWarning( const char *pGroupName, int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( pGroupName, level ) )
 		return;
@@ -623,13 +625,13 @@ void DWarning( const tchar *pGroupName, int level, const tchar *pMsgFormat, ... 
 	va_end(args);
 }
 
-void WarningV( PRINTF_FORMAT_STRING const tchar *pMsg, va_list arglist )
+void WarningV( PRINTF_FORMAT_STRING const char *pMsg, va_list arglist )
 {
 	_SpewMessage( SPEW_WARNING, pMsg, arglist );
 }
 
 
-void Log( const tchar *pMsgFormat, ... )
+void Log( const char *pMsgFormat, ... )
 {
 	va_list args;
 	va_start( args, pMsgFormat );
@@ -637,7 +639,7 @@ void Log( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void DLog( const tchar *pGroupName, int level, const tchar *pMsgFormat, ... )
+void DLog( const char *pGroupName, int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( pGroupName, level ) )
 		return;
@@ -648,13 +650,13 @@ void DLog( const tchar *pGroupName, int level, const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void LogV( PRINTF_FORMAT_STRING const tchar *pMsg, va_list arglist )
+void LogV( PRINTF_FORMAT_STRING const char *pMsg, va_list arglist )
 {
 	_SpewMessage( SPEW_LOG, pMsg, arglist );
 }
 
 
-void Error( const tchar *pMsgFormat, ... )
+void Error( const char *pMsgFormat, ... )
 {
 	va_list args;
 	va_start( args, pMsgFormat );
@@ -662,7 +664,7 @@ void Error( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void ErrorV( PRINTF_FORMAT_STRING const tchar *pMsg, va_list arglist )
+void ErrorV( PRINTF_FORMAT_STRING const char *pMsg, va_list arglist )
 {
 	_SpewMessage( SPEW_ERROR, pMsg, arglist );
 }
@@ -671,7 +673,7 @@ void ErrorV( PRINTF_FORMAT_STRING const tchar *pMsg, va_list arglist )
 // A couple of super-common dynamic spew messages, here for convenience 
 // These looked at the "developer" group, print if it's level 1 or higher 
 //-----------------------------------------------------------------------------
-void DevMsg( int level, const tchar* pMsgFormat, ... )
+void DevMsg( int level, const char* pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_DEVELOPER, level ) )
 		return;
@@ -682,7 +684,7 @@ void DevMsg( int level, const tchar* pMsgFormat, ... )
 	va_end(args);
 }
 
-void DevWarning( int level, const tchar *pMsgFormat, ... )
+void DevWarning( int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_DEVELOPER, level ) )
 		return;
@@ -693,7 +695,7 @@ void DevWarning( int level, const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void DevLog( int level, const tchar *pMsgFormat, ... )
+void DevLog( int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_DEVELOPER, level ) )
 		return;
@@ -704,7 +706,7 @@ void DevLog( int level, const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void DevMsg( const tchar *pMsgFormat, ... )
+void DevMsg( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_DEVELOPER, 1 ) )
 		return;
@@ -715,7 +717,7 @@ void DevMsg( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void DevWarning( const tchar *pMsgFormat, ... )
+void DevWarning( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_DEVELOPER, 1 ) )
 		return;
@@ -726,7 +728,7 @@ void DevWarning( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void DevLog( const tchar *pMsgFormat, ... )
+void DevLog( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_DEVELOPER, 1 ) )
 		return;
@@ -742,7 +744,7 @@ void DevLog( const tchar *pMsgFormat, ... )
 // A couple of super-common dynamic spew messages, here for convenience 
 // These looked at the "console" group, print if it's level 1 or higher 
 //-----------------------------------------------------------------------------
-void ConColorMsg( int level, const Color& clr, const tchar* pMsgFormat, ... )
+void ConColorMsg( int level, const Color& clr, const char* pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, level ) )
 		return;
@@ -753,7 +755,7 @@ void ConColorMsg( int level, const Color& clr, const tchar* pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConMsg( int level, const tchar* pMsgFormat, ... )
+void ConMsg( int level, const char* pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, level ) )
 		return;
@@ -764,7 +766,7 @@ void ConMsg( int level, const tchar* pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConWarning( int level, const tchar *pMsgFormat, ... )
+void ConWarning( int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, level ) )
 		return;
@@ -775,7 +777,7 @@ void ConWarning( int level, const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConLog( int level, const tchar *pMsgFormat, ... )
+void ConLog( int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, level ) )
 		return;
@@ -786,7 +788,7 @@ void ConLog( int level, const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConColorMsg( const Color& clr, const tchar* pMsgFormat, ... )
+void ConColorMsg( const Color& clr, const char* pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, 1 ) )
 		return;
@@ -797,7 +799,7 @@ void ConColorMsg( const Color& clr, const tchar* pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConMsg( const tchar *pMsgFormat, ... )
+void ConMsg( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, 1 ) )
 		return;
@@ -808,7 +810,7 @@ void ConMsg( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConWarning( const tchar *pMsgFormat, ... )
+void ConWarning( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, 1 ) )
 		return;
@@ -819,7 +821,7 @@ void ConWarning( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConLog( const tchar *pMsgFormat, ... )
+void ConLog( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, 1 ) )
 		return;
@@ -831,7 +833,7 @@ void ConLog( const tchar *pMsgFormat, ... )
 }
 
 
-void ConDColorMsg( const Color& clr, const tchar* pMsgFormat, ... )
+void ConDColorMsg( const Color& clr, const char* pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, 2 ) )
 		return;
@@ -842,7 +844,7 @@ void ConDColorMsg( const Color& clr, const tchar* pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConDMsg( const tchar *pMsgFormat, ... )
+void ConDMsg( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, 2 ) )
 		return;
@@ -853,7 +855,7 @@ void ConDMsg( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConDWarning( const tchar *pMsgFormat, ... )
+void ConDWarning( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, 2 ) )
 		return;
@@ -864,7 +866,7 @@ void ConDWarning( const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void ConDLog( const tchar *pMsgFormat, ... )
+void ConDLog( const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_CONSOLE, 2 ) )
 		return;
@@ -880,7 +882,7 @@ void ConDLog( const tchar *pMsgFormat, ... )
 // A couple of super-common dynamic spew messages, here for convenience 
 // These looked at the "network" group, print if it's level 1 or higher 
 //-----------------------------------------------------------------------------
-void NetMsg( int level, const tchar* pMsgFormat, ... )
+void NetMsg( int level, const char* pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_NETWORK, level ) )
 		return;
@@ -891,7 +893,7 @@ void NetMsg( int level, const tchar* pMsgFormat, ... )
 	va_end(args);
 }
 
-void NetWarning( int level, const tchar *pMsgFormat, ... )
+void NetWarning( int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_NETWORK, level ) )
 		return;
@@ -902,7 +904,7 @@ void NetWarning( int level, const tchar *pMsgFormat, ... )
 	va_end(args);
 }
 
-void NetLog( int level, const tchar *pMsgFormat, ... )
+void NetLog( int level, const char *pMsgFormat, ... )
 {
 	if( !IsSpewActive( GROUP_NETWORK, level ) )
 		return;
@@ -919,7 +921,7 @@ void NetLog( int level, const tchar *pMsgFormat, ... )
 //-----------------------------------------------------------------------------
 // Sets the priority level for a spew group
 //-----------------------------------------------------------------------------
-void SpewActivate( const tchar* pGroupName, int level )
+void SpewActivate( const char* pGroupName, int level )
 {
 	Assert( pGroupName );
 	
@@ -962,13 +964,13 @@ void SpewActivate( const tchar* pGroupName, int level )
 			s_pSpewGroups = (SpewGroup_t*)PvAlloc( s_GroupCount * sizeof(SpewGroup_t) ); 
 		}
 		
-		Assert( _tcslen( pGroupName ) < MAX_GROUP_NAME_LENGTH );
-		_tcscpy( s_pSpewGroups[ind].m_GroupName, pGroupName );
+		Assert( std::strlen( pGroupName ) < MAX_GROUP_NAME_LENGTH );
+		strcpy( s_pSpewGroups[ind].m_GroupName, pGroupName );
 
 		// Update standard groups
 		for ( int i = 0; i < GROUP_COUNT; ++i )
 		{
-			if ( ( s_pGroupIndices[i] < 0 ) && !_tcsicmp( s_pGroupNames[i], pGroupName ) )
+			if ( ( s_pGroupIndices[i] < 0 ) && !stricmp( s_pGroupNames[i], pGroupName ) )
 			{
 				s_pGroupIndices[i] = ind;
 				break;
@@ -986,7 +988,7 @@ DBG_INTERFACE float CrackSmokingCompiler( float a )
 	return (float)fabs( a );
 }
 
-void* Plat_SimpleLog( const tchar* file, int line )
+void* Plat_SimpleLog( const char* file, int line )
 {
 	FILE* f = _tfopen( _T("simple.log"), _T("at+") );
 	_ftprintf( f, _T("%s:%i\n"), file, line );

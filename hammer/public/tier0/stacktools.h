@@ -55,12 +55,12 @@ enum TranslateStackInfo_StyleFlags_t
 
 //Generates a formatted list of function information, returns number of translated entries
 //On 360 this generates a string that can be decoded by VXConsole in print functions. Optimal path for translation because it's one way. Other paths require multiple transactions.
-PLATFORM_INTERFACE int TranslateStackInfo( const void * const *pCallStack, int iCallStackCount, tchar *szOutput, int iOutBufferSize, const tchar *szEntrySeparator, TranslateStackInfo_StyleFlags_t style = TSISTYLEFLAG_DEFAULT );
+PLATFORM_INTERFACE int TranslateStackInfo( const void * const *pCallStack, int iCallStackCount, char *szOutput, int iOutBufferSize, const char *szEntrySeparator, TranslateStackInfo_StyleFlags_t style = TSISTYLEFLAG_DEFAULT );
 
 PLATFORM_INTERFACE void PreloadStackInformation( void * const *pAddresses, int iAddressCount ); //caches data and reduces communication with VXConsole to speed up 360 decoding when using any of the Get***FromAddress() functions. Nop on PC.
-PLATFORM_INTERFACE bool GetFileAndLineFromAddress( const void *pAddress, tchar *pFileNameOut, int iMaxFileNameLength, uint32 &iLineNumberOut, uint32 *pDisplacementOut = NULL );
-PLATFORM_INTERFACE bool GetSymbolNameFromAddress( const void *pAddress, tchar *pSymbolNameOut, int iMaxSymbolNameLength, uint64 *pDisplacementOut = NULL );
-PLATFORM_INTERFACE bool GetModuleNameFromAddress( const void *pAddress, tchar *pModuleNameOut, int iMaxModuleNameLength );
+PLATFORM_INTERFACE bool GetFileAndLineFromAddress( const void *pAddress, char *pFileNameOut, int iMaxFileNameLength, uint32 &iLineNumberOut, uint32 *pDisplacementOut = NULL );
+PLATFORM_INTERFACE bool GetSymbolNameFromAddress( const void *pAddress, char *pSymbolNameOut, int iMaxSymbolNameLength, uint64 *pDisplacementOut = NULL );
+PLATFORM_INTERFACE bool GetModuleNameFromAddress( const void *pAddress, char *pModuleNameOut, int iMaxModuleNameLength );
 
 
 
@@ -72,6 +72,14 @@ public:
 	{
 		iValidEntries = copyFrom.iValidEntries;
 		memcpy( pStack, copyFrom.pStack, sizeof( void * ) * copyFrom.iValidEntries );
+	}
+	CCallStackStorage& operator=(const CCallStackStorage &other)
+	{
+		if (this != &other) {
+			iValidEntries = other.iValidEntries;
+			memcpy(pStack, other.pStack, sizeof(void *) * other.iValidEntries);
+		}
+		return *this;
 	}
 
 	void *pStack[128]; //probably too big, possibly too small for some applications. Don't want to spend the time figuring out how to generalize this without templatizing pollution or mallocs

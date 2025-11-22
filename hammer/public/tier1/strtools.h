@@ -369,6 +369,14 @@ enum EStringConvertErrorPolicy
 	STRINGCONVERT_ASSERT_FAIL =		_STRINGCONVERTFLAG_ASSERT + STRINGCONVERT_FAIL,
 }; 
 
+#if defined( _MSC_VER ) || defined( WIN32 )
+typedef wchar_t uchar16;
+typedef unsigned int uchar32;
+#else
+typedef unsigned short uchar16;
+typedef wchar_t uchar32;
+#endif
+
 // Unicode (UTF-8, UTF-16, UTF-32) fundamental conversion functions.
 bool Q_IsValidUChar32( uchar32 uValue );
 int Q_UChar32ToUTF8Len( uchar32 uValue );

@@ -45,7 +45,6 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
-#include "wchartypes.h"
 #include "basetypes.h"
 #include "tier0/valve_off.h"
 
@@ -1306,7 +1305,7 @@ struct CPUInformation
 
 	int64 m_Speed;						// In cycles per second.
 
-	tchar* m_szProcessorID;				// Processor vendor Identification.
+	char* m_szProcessorID;				// Processor vendor Identification.
 
 	uint32 m_nModel;
 	uint32 m_nFeatures[3];
@@ -1364,7 +1363,7 @@ PLATFORM_INTERFACE void	Plat_ApplyHardwareDataBreakpointsToNewThread( unsigned l
 //-----------------------------------------------------------------------------
 // Process related functions
 //-----------------------------------------------------------------------------
-PLATFORM_INTERFACE const tchar *Plat_GetCommandLine();
+PLATFORM_INTERFACE const char *Plat_GetCommandLine();
 #ifndef _WIN32
 // helper function for OS's that don't have a ::GetCommandLine() call
 PLATFORM_INTERFACE void Plat_SetCommandLine( const char *cmdLine );
@@ -1395,7 +1394,7 @@ PLATFORM_INTERFACE bool Plat_FastVerifyHardwareKey();
 //-----------------------------------------------------------------------------
 // Just logs file and line to simple.log
 //-----------------------------------------------------------------------------
-PLATFORM_INTERFACE void* Plat_SimpleLog( const tchar* file, int line );
+PLATFORM_INTERFACE void* Plat_SimpleLog( const char* file, int line );
 
 #if _X360
 #define Plat_FastMemset XMemSet

@@ -2181,7 +2181,7 @@ inline void CThreadMutex::Lock()
 	#if defined( THREAD_MUTEX_TRACING_ENABLED )
 		uint thisThreadID = ThreadGetCurrentId();
 		if ( m_bTrace && m_currentOwnerID && ( m_currentOwnerID != thisThreadID ) )
-			Msg( _T( "Thread %u about to wait for lock %p owned by %u\n" ), ThreadGetCurrentId(), (CRITICAL_SECTION *)&m_CriticalSection, m_currentOwnerID );
+			Msg( "Thread %u about to wait for lock %p owned by %u\n", ThreadGetCurrentId(), (CRITICAL_SECTION *)&m_CriticalSection, m_currentOwnerID );
 	#endif
 
 		LockSilent();
@@ -2192,7 +2192,7 @@ inline void CThreadMutex::Lock()
 			// we now own it for the first time.  Set owner information
 			m_currentOwnerID = thisThreadID;
 			if ( m_bTrace )
-				Msg( _T( "Thread %u now owns lock 0x%p\n" ), m_currentOwnerID, (CRITICAL_SECTION *)&m_CriticalSection );
+				Msg( "Thread %u now owns lock 0x%p\n", m_currentOwnerID, (CRITICAL_SECTION *)&m_CriticalSection );
 		}
 		m_lockCount++;
 	#endif
@@ -2216,7 +2216,7 @@ inline void CThreadMutex::Unlock()
 		if (m_lockCount == 0)
 		{
 			if ( m_bTrace )
-				Msg( _T( "Thread %u releasing lock 0x%p\n" ), m_currentOwnerID, (CRITICAL_SECTION *)&m_CriticalSection );
+				Msg( "Thread %u releasing lock 0x%p\n", m_currentOwnerID, (CRITICAL_SECTION *)&m_CriticalSection );
 			m_currentOwnerID = 0;
 		}
 	#endif

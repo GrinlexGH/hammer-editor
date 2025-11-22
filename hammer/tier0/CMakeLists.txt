@@ -2,8 +2,16 @@
 set(CURRENT_TARGET_NAME tier0)
 
 set(SOURCES
+    assert_dialog.cpp
+    resource.h
     dbg.cpp
+    pch_tier0.h
+    fasttimer.cpp
 )
+
+if(WIN32)
+    list(APPEND SOURCES assert_dialog.rc)
+endif()
 
 add_library(${CURRENT_TARGET_NAME} SHARED ${SOURCES})
 
