@@ -10,6 +10,9 @@ set(SOURCES
     threadtools.cpp
     commandline.cpp
     platform.cpp
+    memdbg.cpp
+    mem_helpers.h
+    mem_helpers.cpp
 )
 
 if(WIN32)
